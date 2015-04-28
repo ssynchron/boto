@@ -144,7 +144,8 @@ class TLSv1HTTPSConnection(http_client.HTTPSConnection):
 
     default_port = http_client.HTTPS_PORT
 
-    def __init__(self, host, port=default_port, strict=None, **kwargs):
+    def __init__(self, host, port=default_port, key_file=None, cert_file=None,
+                 strict=None, **kwargs):
         """Constructor.
 
         Args:
@@ -159,6 +160,8 @@ class TLSv1HTTPSConnection(http_client.HTTPSConnection):
             kwargs['strict'] = strict
 
         http_client.HTTPConnection.__init__(self, host=host, port=port, **kwargs)
+        self.key_file = kwargs.get('key_file', None)
+        self.cert_file = kwargs.get('cert_file', None)
 
     def connect(self):
         "Connect to a host on a given (SSL) port."
@@ -168,4 +171,4 @@ class TLSv1HTTPSConnection(http_client.HTTPSConnection):
             sock = socket.create_connection((self.host, self.port))
         msg = "wrapping ssl socket; "
         boto.log.debug(msg)
-        self.sock = ssl.wrap_socket(sock,  ssl_version=ssl.PROTOCOL_TLSv1)
+        self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file, ssl_version=ssl.PROTOCOL_TLSv1)
