@@ -128,7 +128,8 @@ class CertValidatingHTTPSConnection(http_client.HTTPConnection):
         self.sock = ssl.wrap_socket(sock, keyfile=self.key_file,
                                     certfile=self.cert_file,
                                     cert_reqs=ssl.CERT_REQUIRED,
-                                    ca_certs=self.ca_certs)
+                                    ca_certs=self.ca_certs,
+                                    ssl_version=ssl.PROTOCOL_TLSv1)
         cert = self.sock.getpeercert()
         hostname = self.host.split(':', 0)[0]
         if not ValidateCertificateHostname(cert, hostname):
@@ -136,3 +137,20 @@ class CertValidatingHTTPSConnection(http_client.HTTPConnection):
                                               cert,
                                               'remote hostname "%s" does not match '
                                               'certificate' % hostname)
+
+
+class TLSv1HTTPSConnection(http_client.HTTPSConnection):
+    def __init__(self, host, port=None, key_file=None, cert_file=None,
+                 strict=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+
+        http_client.HTTPSConnection.__init__(self, host, port, key_file, cert_file, strict, timeout)
+
+    def connect(self):
+        sock = socket.create_connection((self.host, self.port),
+                                        self.timeout)
+        if self._tunnel_host:
+            self.sock = sock
+            self._tunnel()
+
+        self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file, ssl_version=ssl.PROTOCOL_TLSv1)
+
