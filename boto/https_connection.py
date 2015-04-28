@@ -140,17 +140,36 @@ class CertValidatingHTTPSConnection(http_client.HTTPConnection):
 
 
 class TLSv1HTTPSConnection(http_client.HTTPSConnection):
-    def __init__(self, host, port=None, key_file=None, cert_file=None,
-                 strict=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+    """An HTTPSConnection that connects over TLSv1."""
 
-        http_client.HTTPSConnection.__init__(self, host, port, key_file, cert_file, strict, timeout)
+    default_port = http_client.HTTPS_PORT
+
+    def __init__(self, host, port=default_port, strict=None, **kwargs):
+        """Constructor.
+
+        Args:
+          host: The hostname. Can be in 'host:port' form.
+          port: The port. Defaults to 443.
+        """
+
+        if six.PY2:
+            # Python 3.2 and newer have deprecated and removed the strict
+            # parameter. Since the params are supported as keyword arguments
+            # we conditionally add it here.
+            kwargs['strict'] = strict
+
+        http_client.HTTPConnection.__init__(self, host=host, port=port, **kwargs)
 
     def connect(self):
-        sock = socket.create_connection((self.host, self.port),
-                                        self.timeout)
-        if self._tunnel_host:
-            self.sock = sock
-            self._tunnel()
-
-        self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file, ssl_version=ssl.PROTOCOL_TLSv1)
-
+        "Connect to a host on a given (SSL) port."
+        if hasattr(self, "timeout"):
+            sock = socket.create_connection((self.host, self.port), self.timeout)
+        else:
+            sock = socket.create_connection((self.host, self.port))
+        msg = "wrapping ssl socket; "
+        if self.ca_certs:
+            msg += "CA certificate file=%s" % self.ca_certs
+        else:
+            msg += "using system provided SSL certs"
+        boto.log.debug(msg)
+        self.sock = ssl.wrap_socket(sock,  ssl_version=ssl.PROTOCOL_TLSv1)
