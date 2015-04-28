@@ -167,9 +167,5 @@ class TLSv1HTTPSConnection(http_client.HTTPSConnection):
         else:
             sock = socket.create_connection((self.host, self.port))
         msg = "wrapping ssl socket; "
-        if self.ca_certs:
-            msg += "CA certificate file=%s" % self.ca_certs
-        else:
-            msg += "using system provided SSL certs"
         boto.log.debug(msg)
         self.sock = ssl.wrap_socket(sock,  ssl_version=ssl.PROTOCOL_TLSv1)
